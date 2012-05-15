@@ -1,0 +1,16 @@
+title: Check UPS configuration
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to display a configuration information about the UPS
+ that supports the generic {UPS-MIB}. The check is always {OK}.
+
+ The following {UPS-MIB} object values are displayed in text:
+ {upsConfigInputVoltage}, {upsConfigInputFreq}, {upsConfigOutputVoltage},
+ {upsConfigOutputFreq}, {upsConfigOutputVA}, {upsConfigLowBattTime}.
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsConfigInputVoltage} object.

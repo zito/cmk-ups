@@ -1,0 +1,100 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2012             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# ails.  You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Check has been developed using an UPS Emerson/Liebert NX and General
+# Electric NetPro 3000
+#
+# +------------------------------------------------------------------+
+# | This file has been contributed by:                               |
+# |                                                                  |
+# | Václav Ovsík <vaclav.ovsik@gmail.com>             Copyright 2012 |
+# +------------------------------------------------------------------+
+
+# Example info:
+#
+#   [[['499', '3']], [['232'], ['234'], ['233']]]
+#   
+#   [[['500', '1']], [['238']]]
+#
+
+
+
+def inventory_ups_bypass_freq(info):
+    if len(info[0]) == 0:
+        return
+    freq = saveint(info[0][0][0])
+    if freq:
+        return [ (None, {}) ]
+
+def check_ups_bypass_freq(item, params, info):
+    freq = saveint(info[0][0][0])
+    return check_ups_chk_levels_final('bypass_freq', freq / 10.0, params)
+
+
+def inventory_ups_bypass(info):
+    if len(info[0]) == 0:
+        return
+    numl = saveint(info[0][0][1])
+    inv = []
+    if numl == 1:
+        inv.append( ('L', {}) )
+    else:
+        for i in range(1, numl+1):
+            inv.append( ('L%d' % i, {}) )
+    return inv
+
+def check_ups_bypass(item, params, info):
+    bpinfo, bplines = info
+    num = saveint(item[1:])
+    if item != 'L' + str(num) and item != 'L':
+        return (3, 'UNKNOWN - Item not found')
+    if num:
+        num -= 1
+    volt, = [ saveint(x) for x in bplines[num] ]
+    return check_ups_chk_levels_final('bypass_volt', volt, params)
+
+
+check_info['ups_bypass.freq'] = (check_ups_bypass_freq, 'UPS Bypass Freq',
+        1, inventory_ups_bypass_freq)
+check_default_levels['ups_bypass.freq'] = 'ups_default_levels'
+
+check_info['ups_bypass'] = (check_ups_bypass, 'UPS Bypass %s',
+        1, inventory_ups_bypass)
+check_default_levels['ups_bypass'] = 'ups_default_levels'
+check_includes['ups_bypass'] = [ 'ups.include' ]
+
+snmp_info['ups_bypass'] = [
+    ('.1.3.6.1.2.1.33.1.5', [
+        '1.0',  # UPS-MIB::upsBypassFrequency.0
+        '2.0',  # UPS-MIB::upsBypassNumLines.0
+    ]),
+    ('.1.3.6.1.2.1.33.1.5.3.1', [
+        '2',    # UPS-MIB::upsBypassVoltage
+    ]),
+]
+
+snmp_scan_functions['ups_bypass'] = \
+        lambda oid: oid('.1.3.6.1.2.1.33.1.5.1.0') != None

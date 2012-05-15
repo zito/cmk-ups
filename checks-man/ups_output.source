@@ -1,0 +1,13 @@
+title: Check UPS output source
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to monitor an output source of the UPS that supports the
+ generic {UPS-MIB}. The check reads the object {UPS-MIB::upsOutputSource} and
+ it is {OK} if the value is {normal(3)} only.
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsOutputSource} object.

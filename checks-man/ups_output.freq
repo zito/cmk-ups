@@ -1,0 +1,37 @@
+title: Check UPS Bypass frequency
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to monitor a bypass frequency of the UPS that supports
+ the generic {UPS-MIB}.
+
+ The check reads a value of an object {upsBypassFrequency}.
+
+ The check status depends on the above value. The value must be in defined levels
+ the check has OK status.
+
+examples:
+ # Disable frequency perf data
+ ups_default_levels["output_freq_perfdata"] = False
+
+perfdata:
+ The check sends a single performance variable {Frequency} when enabled.
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsBypassFrequency} object.
+
+[parameters]
+parameters (dict): The dictionary of keys:
+
+ {output_freq_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {Frequency} value.
+
+ {output_freq_levels} a tuple of ints (lc, lw, hw, hc) representing the levels
+ for the {Frequency} value. It has default (48, 49.5, 50.5, 52).
+
+[configuration]
+ups_default_levels: dictionary with default parameters. It is common for all ups_*
+ checks so you should probably manipulate only individual keys.

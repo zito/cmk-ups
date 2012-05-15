@@ -1,0 +1,211 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2012             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# ails.  You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Functions and definitions used by ups_*
+
+
+
+def check_ups_levels(key, value, params):
+
+    def get_my_param(subkey):
+        return params.get(key + '_' + subkey)
+
+    def has_my_param(subkey):
+        return params.has_key(key + '_' + subkey)
+
+    label = get_my_param('label') or key
+    levels = get_my_param('levels')
+    perfunit = get_my_param('perfunit')
+    unit = get_my_param('unit') or perfunit or ''
+    if unit == '%':
+        unit = '%%'
+    info = get_my_param('info') or ('%s: %%d%s' % (label, unit))
+    status = 0
+    txt = info % value
+    level = dict.fromkeys(('lc', 'lw', 'hw', 'hc'))
+    if levels:
+        levels_template = get_my_param('levels_template') or 'lc,lw,hw,hc'
+        for k, v in zip(str.split(levels_template, ','), levels):
+            level[k] = v
+        if level['lc'] is not None and value <= level['lc']:
+            status = 2
+            txt += ' (!! <= ' + str(level['lc']) + ')'
+        elif level['lw'] is not None and value <= level['lw']:
+            status = 1
+            txt += ' (! <= ' + str(level['lw']) + ')'
+        elif level['hc'] is not None and value >= level['hc']:
+            status = 2
+            txt += ' (!! >= ' + str(level['hc']) + ')'
+        elif level['hw'] is not None and value >= level['hw']:
+            status = 1
+            txt += ' (! >= ' + str(level['hw']) + ')'
+    def xstr(x):
+        if x is None:
+            return ''
+        return str(x)
+    if has_my_param('perfdata'):
+        doperf = get_my_param('perfdata')
+    else:
+        doperf = params.get('perfdata')
+    if doperf:
+        if perfunit:
+            value = str(value) + perfunit
+        perf = (label, value)
+        perf += tuple(map(lambda x: x or None, (
+            ':'.join(filter(None, (xstr(level['lw']), xstr(level['hw'])))),
+            ':'.join(filter(None, (xstr(level['lc']), xstr(level['hc'])))))))
+    else:
+        perf = ()
+    return (status, txt, perf)
+
+def check_ups_merge_final(*chk):
+    stat_result = 0
+    txts = []
+    perfs = []
+    for stat, txt, perf in chk:
+        if stat_result < stat:
+            if stat != 3 or stat_result == 0:
+                stat_result = stat
+        if txt:
+            txts.append(txt)
+        if perf:
+            perfs.append(perf)
+    stat_txt = {0:'OK', 1:'WARN', 2:'CRIT', 3:'UNKNOWN'}[stat_result]
+    return (stat_result, stat_txt + ' - ' + ', '.join(txts), perfs)
+
+def check_ups_chk_levels_final(key, value, params):
+    return check_ups_merge_final(
+            check_ups_levels(key, value, params)
+            )
+
+
+factory_settings["ups_default_levels"] = {
+
+# Default parameters
+
+#
+#       common / global parameters
+#
+        'perfdata'  : True,
+
+#
+#       ups_battery
+#
+# Running time on battery [s]
+        'batt_running_time_label'           : 'SecondsOnBattery',
+        'batt_running_time_perfunit'        : 's',
+# Battery time remaining [min]
+        'batt_time_left_label'              : 'EstimatedMinutesRemaining',
+        'batt_time_left_unit'               : 'min',
+        'batt_time_left_levels_template'    : 'lw,lc',
+        'batt_time_left_levels'             : ( 15, 10 ),
+# Battery charge remaining [%]
+        'batt_charge_left_label'            : 'EstimatedChargeRemaining',
+        'batt_charge_left_perfunit'         : '%',
+        'batt_charge_left_levels_template'  : 'lw,lc',
+        'batt_charge_left_levels'           : ( 15, 10 ),
+# Battery voltage [V]
+        'batt_volt_label'                   : 'BatteryVoltage',
+        'batt_volt_unit'                    : 'V',
+        'batt_volt_info'                    : 'BatteryVoltage: %.1fV',
+# Battery current [A]
+        'batt_curr_label'                   : 'BatteryCurrent',
+        'batt_curr_unit'                    : 'A',
+        'batt_curr_info'                    : 'BatteryCurrent: %.1fA',
+        'batt_curr_levels_template'         : 'hw,hc',
+# Battery temperature [°C]
+        'batt_temp_label'                   : 'BatteryTemperature',
+        'batt_temp_unit'                    : '°C',
+        'batt_temp_levels_template'         : 'hw,hc',
+        'batt_temp_levels'                  : ( 35, 40 ),
+
+#
+#       ups_bypass
+#
+# Bypass voltage [V]
+        'bypass_volt_label'		        : 'Voltage',
+        'bypass_volt_unit'              : 'V',
+        'bypass_volt_levels'            : ( 210, 220, 240, 250 ),
+
+#
+#       ups_bypass.freq
+#
+# Bypass frequency [Hz]
+        'bypass_freq_label'             : 'Frequency',
+        'bypass_freq_unit'              : 'Hz',
+        'bypass_freq_info'              : 'Frequency: %.1fHz',
+        'bypass_freq_levels'            : ( 48, 49.5, 50.5, 52 ),
+
+#
+#       ups_input
+#
+# Input voltage [V]
+        'input_volt_label'		        : 'Voltage',
+        'input_volt_unit'               : 'V',
+        'input_volt_levels'             : ( 210, 220, 240, 250 ),
+# Input current [A]
+        'input_curr_label'              : 'Current',
+        'input_curr_unit'               : 'A',
+        'input_curr_info'               : 'Current: %.1fA',
+        'input_curr_levels_template'    : 'hw,hc',
+# Input frequency [Hz]
+        'input_freq_label'              : 'Frequency',
+        'input_freq_unit'               : 'Hz',
+        'input_freq_info'               : 'Frequency: %.1fHz',
+        'input_freq_levels'             : ( 48, 49.5, 50.5, 52 ),
+
+#
+#       ups_output
+#
+# Output voltage [V]
+        'output_volt_label'             : 'Voltage',
+        'output_volt_unit'              : 'V',
+        'output_volt_levels'            : ( 210, 220, 240, 250 ),
+# Output current [A]
+        'output_curr_label'             : 'Current',
+        'output_curr_unit'              : 'A',
+        'output_curr_info'              : 'Current: %.1fA',
+        'output_curr_levels_template'   : 'hw,hc',
+# Output power [W]
+        'output_power_label'            : 'Power',
+        'output_power_unit'             : 'W',
+        'output_power_levels_template'  : 'hw,hc',
+# Output load [%]
+        'output_load_label'             : 'PercentLoad',
+        'output_load_perfunit'          : '%',
+        'output_load_levels_template'   : 'hw,hc',
+        'output_load_levels'            : ( 80, 90 ),
+
+#
+#       ups_output.freq
+#
+# Output frequency [Hz]
+        'output_freq_label'             : 'Frequency',
+        'output_freq_unit'              : 'Hz',
+        'output_freq_info'              : 'Frequency: %.1fHz',
+        'output_freq_levels'            : ( 48, 49.5, 50.5, 52 ),
+
+}

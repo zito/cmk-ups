@@ -1,0 +1,38 @@
+title: Check UPS Bypass voltage
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to monitor a bypass voltage of the UPS that supports the
+ generic {UPS-MIB}.
+
+ The check reads a value of an object {upsBypassVoltage}.
+
+ The check status depends on the above value. The value must be in defined levels
+ the check has OK status.
+
+perfdata:
+ The check sends a single performance variable {Voltage} if enabled.
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsBypassFrequency} object. The inventory creates one service for
+ each bypass power line found.
+
+examples:
+ # Disable performance data for the voltage
+ ups_default_levels["bypass_volt_perfdata"] = False
+
+[parameters]
+parameters (dict): The dictionary of keys:
+
+ {bypass_volt_perfdata} setting it to True enables or to False disables
+ generating performance data for the {Voltage} value.
+
+ {bypass_volt_levels} a tuple of ints (lc, lw, hw, hc) representing the levels
+ for the {Voltage} value. It has default (210, 220, 240, 250).
+
+[configuration]
+ups_default_levels: dictionary with default parameters. It is common for all ups_*
+ checks so you should probably manipulate only individual keys.

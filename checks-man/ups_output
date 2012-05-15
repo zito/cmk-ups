@@ -1,0 +1,59 @@
+title: Check UPS output lines
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to monitor output lines of the UPS that supports the
+ generic {UPS-MIB}. For every output line the voltage, current, power and
+ percent load is monitored.
+
+ The check reads values of objects: {upsOutputVoltage}, {upsOutputCurrent},
+ {upsOutputPower}, {upsOutputPercentLoad}.
+
+ The check status depends on above values. All values must be in defined levels
+ the check has OK status.
+
+examples:
+ # Warning level at 80%, critical level at 90% of full load
+ ups_default_levels["output_load_levels"] = (80, 90)
+
+perfdata:
+ The check sends performance variables: {Voltage}, {Current}, {Power},
+ {PercentLoad} if enabled.
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsOutputSource} object. The inventory creates one service for each
+ output power line.
+
+[parameters]
+parameters (dict): This check uses a dictionary with keys:
+
+ {output_volt_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {Voltage} value.
+
+ {output_volt_levels} a tuple of ints (lc, lw, hw, hc) representing the levels
+ for the {Voltage} value. It has default (210, 220, 240, 250).
+
+ {output_curr_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {Current} value.
+
+ {output_curr_levels} a tuple of ints (hw, hc) representing the levels for the
+ {Current} value. It has no default.
+
+ {output_power_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {Power} value.
+
+ {output_power_levels} a tuple of ints (hw, hc) representing the levels
+ for the {Power} value. It has no default
+
+ {output_load_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {PercentLoad} value.
+
+ {output_load_levels} a tuple of ints (hw, hc) representing the levels
+ for the {PercentLoad} value. It has default (80, 90).
+
+[configuration]
+ups_default_levels: dictionary with default parameters. It is common for all ups_*
+ checks so you should probably manipulate only individual keys.

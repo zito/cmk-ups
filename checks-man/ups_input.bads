@@ -1,0 +1,12 @@
+title: Check UPS input line bads
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to monitor a number of times the input line of the UPS was bad.
+ The UPS that supports the generic {UPS-MIB} can be monitored. The check is always {OK}.
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsInputLineBads} object.

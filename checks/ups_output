@@ -1,0 +1,127 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+# +------------------------------------------------------------------+
+# |             ____ _               _        __  __ _  __           |
+# |            / ___| |__   ___  ___| | __   |  \/  | |/ /           |
+# |           | |   | '_ \ / _ \/ __| |/ /   | |\/| | ' /            |
+# |           | |___| | | |  __/ (__|   <    | |  | | . \            |
+# |            \____|_| |_|\___|\___|_|\_\___|_|  |_|_|\_\           |
+# |                                                                  |
+# | Copyright Mathias Kettner 2012             mk@mathias-kettner.de |
+# +------------------------------------------------------------------+
+#
+# This file is part of Check_MK.
+# The official homepage is at http://mathias-kettner.de/check_mk.
+#
+# check_mk is free software;  you can redistribute it and/or modify it
+# under the  terms of the  GNU General Public License  as published by
+# the Free Software Foundation in version 2.  check_mk is  distributed
+# in the hope that it will be useful, but WITHOUT ANY WARRANTY;  with-
+# out even the implied warranty of  MERCHANTABILITY  or  FITNESS FOR A
+# PARTICULAR PURPOSE. See the  GNU General Public License for more de-
+# ails.  You should have  received  a copy of the  GNU  General Public
+# License along with GNU Make; see the file  COPYING.  If  not,  write
+# to the Free Software Foundation, Inc., 51 Franklin St,  Fifth Floor,
+# Boston, MA 02110-1301 USA.
+
+# Check has been developed using an UPS Emerson/Liebert NX and General
+# Electric NetPro 3000
+#
+# +------------------------------------------------------------------+
+# | This file has been contributed by:                               |
+# |                                                                  |
+# | Václav Ovsík <vaclav.ovsik@gmail.com>             Copyright 2012 |
+# +------------------------------------------------------------------+
+
+# Example info:
+#
+#   [[['3', '499', '3']],
+#    [['229', '232', '5000', '23'],
+#     ['229', '153', '3200', '15'],
+#     ['229', '150', '3100', '14']]]
+#   
+#   [[['3', '500', '1']], [['230', '18', '267', '14']]]
+#
+
+
+def inventory_ups_output_freq(info):
+    if len(info[0]) == 0:
+        return
+    freq = saveint(info[0][0][1])
+    if freq:
+        return [ (None, {}) ]
+
+def check_ups_output_freq(item, params, info):
+    freq = saveint(info[0][0][1])
+    return check_ups_chk_levels_final('output_freq', freq / 10.0, params)
+
+
+def inventory_ups_output_source(info):
+    if len(info[0]) == 0:
+        return
+    if saveint(info[0][0][0]) > 0:
+        return [ (None, None) ]
+
+def check_ups_output_source(item, params, info):
+    src = saveint(info[0][0][0])
+    return (0, 'OK - Output Source: %s' \
+            % {1:'other(1)', 2:'none(2)', 3:'normal(3)',
+                4:'bypass(4)', 5:'battery(5)', 6:'booster(6)',
+                7:'reducer(7)'}[src])
+
+
+def inventory_ups_output(info):
+    if len(info[0]) == 0:
+        return
+    numl = saveint(info[0][0][2])
+    inv = []
+    if numl == 1:
+        inv.append( ('L', {}) )
+    else:
+        for i in range(1, numl+1):
+            inv.append( ('L%d' % i, {}) )
+    return inv
+
+def check_ups_output(item, params, info):
+    outinfo, outlines = info
+    num = saveint(item[1:])
+    if item != 'L' + str(num) and item != 'L':
+        return (3, 'UNKNOWN - Item not found')
+    if num:
+        num -= 1
+    volt, curr, power, percload = [ saveint(x) for x in outlines[num] ]
+    return check_ups_merge_final(
+            check_ups_levels('output_volt', volt, params),
+            check_ups_levels('output_curr', curr / 10.0, params),
+            check_ups_levels('output_power', power, params),
+            check_ups_levels('output_load', percload, params),
+            )
+
+check_info['ups_output.freq'] = (check_ups_output_freq, 'UPS Output Freq',
+        1, inventory_ups_output_freq)
+check_default_levels['ups_output.freq'] = 'ups_default_levels'
+
+check_info['ups_output.source'] = (check_ups_output_source, 'UPS Output Source',
+        0, inventory_ups_output_source)
+
+check_info['ups_output'] = (check_ups_output, 'UPS Output %s',
+        1, inventory_ups_output)
+check_includes['ups_output'] = [ 'ups.include' ]
+check_default_levels['ups_output'] = 'ups_default_levels'
+
+snmp_info['ups_output'] = [
+    ('.1.3.6.1.2.1.33.1.4', [
+        '1.0',  # UPS-MIB::upsOutputSource.0
+        '2.0',  # UPS-MIB::upsOutputFrequency.0
+        '3.0',  # UPS-MIB::upsOutputNumLines.0
+    ]),
+    ('.1.3.6.1.2.1.33.1.4.4.1', [
+        '2',    # UPS-MIB::upsOutputVoltage
+        '3',    # UPS-MIB::upsOutputCurrent
+        '4',    # UPS-MIB::upsOutputPower
+        '5',    # UPS-MIB::upsOutputPercentLoad
+    ]),
+]
+
+snmp_scan_functions['ups_output'] = \
+        lambda oid: oid('.1.3.6.1.2.1.33.1.4.1.0') != None

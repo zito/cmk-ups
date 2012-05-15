@@ -1,0 +1,16 @@
+title: Check UPS identification
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to display identification attributes of the UPS that
+ supports the generic {UPS-MIB}. The check is always {OK}.
+
+ The following {UPS-MIB} object values are displayed in text:
+ {upsIdentManufacturer}, {upsIdentModel}, {upsIdentUPSSoftwareVersion},
+ {upsIdentAgentSoftwareVersion}.
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsIdentModel} object.

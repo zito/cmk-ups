@@ -1,0 +1,92 @@
+title: Check UPS Battery
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to monitor the state of the battery of UPS supporting
+ the generic {UPS-MIB}. The {UPS-MIB} data objects usage follows:
+
+ {upsBatteryStatus}:
+  the check is {CRITICAL} if the value is not equal to {batteryNormal(2)}.
+
+ {upsSecondsOnBattery}:
+  its value is displayed as text and provided with perfdata.
+
+ {upsEstimatedMinutesRemaining}:
+  its value is displayed as text and provided with perfdata. The check is
+  {CRITICAL} if the value is bellow the parameter {crit_minutes_remain}.
+
+ {upsEstimatedChargeRemaining}:
+  its value is displayed as text and provided with perfdata. The check is
+  {CRITICAL} if the value is bellow the parameter {crit_charge_remain}.
+
+ {upsBatteryVoltage}:
+  its value is displayed as text and provided with perfdata.
+
+ {upsBatteryCurrent}:
+  its value is displayed as text and provided with perfdata.
+
+ {upsBatteryTemperature}:
+  it is displayed and perfdata provided. The check is CRITICAL if the value id
+  above the parameter {crit_battery_temp}.
+
+
+examples:
+ # Disable performance data for the SecondsOnBattery
+ ups_default_levels["batt_running_time_perfdata"] = False
+
+ # Set the warning level to 5 minutes and critical to 2 minutes remainning
+ ups_default_levels["batt_time_left_levels"] = (5, 2)
+
+perfdata:
+ The check sends following performance variables only if it is enabled by
+ configuration parameters:
+ {SecondsOnBattery}, {EstimatedMinutesRemaining}, {EstimatedChargeRemaining},
+ {BatteryVoltage}, {BatteryCurrent}, {BatteryTemperature}
+
+inventory:
+ The check will be inventorized if the UPS MIB contains
+ {UPS-MIB::upsBatteryStatus} object.
+
+[parameters]
+parameters (dict): The dictionary of keys:
+
+ {batt_running_time_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {SecondsOnBattery} value.
+
+ {batt_time_left_perfdata} setting it to True enables or to False disables
+ generating perfomance data for {EstimatedMinutesRemaining} value.
+
+ {batt_time_left_levels} a tuple of ints (lw, lc) representing warning level
+ and critical level for the {EstimatedMinutesRemaining} value. It defaults
+ to (15, 10).
+
+ {batt_charge_left_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {EstimatedChargeRemaining} value.
+
+ {batt_charge_left_levels} a tuple of ints (lw, lc)  representing warning level
+ and critical level for the {EstimatedChargeRemaining} value. It defaults
+ to (15, 10).
+
+ {batt_volt_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {BatteryVoltage} value.
+
+ {batt_volt_levels} a tuple of ints (lc, lw, hw, hc) representing the levels
+ for the {BatteryVoltage} value. It has no defult.
+
+ {batt_curr_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {BatteryCurrent} value.
+
+ {batt_curr_levels} a tuple of ints (hw, hc) representing the levels for the
+ {BatteryCurrent} value. It has no default.
+
+ {batt_temp_perfdata} setting it to True enables or to False disables
+ generating perfomance data for the {BatteryTemperature} value.
+
+ {batt_temp_levels} a tuple of ints (hw, hc) representing the levels for the
+ {BatteryTemperature} value. It has default (35, 40).
+
+[configuration]
+ups_default_levels: dictionary with default parameters. It is common for all ups_*
+ checks so you should probably manipulate only individual keys.

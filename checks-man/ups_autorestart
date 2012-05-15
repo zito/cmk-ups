@@ -1,0 +1,24 @@
+title: Check UPS AutoRestart setting
+agents: snmp
+author: Václav Ovsík <vaclav.ovsik@gmail.com>
+license: GPL
+distribution: check_mk
+description:
+ The check can be used to monitor the {upsAutoRestart} object of the
+ UPS that supports the generic {UPS-MIB}.
+ The check is {CRITICAL} if the object value is not equal to a parameter value.
+ The parameter value can be {on(1)} or {off(2)}.
+
+examples:
+ # The UPS should have autorestart enabled
+ ups_autorestart_default_param = 1
+
+inventory:
+ The check will be inventorized if the UPS MIB containes
+ {UPS-MIB::upsAutoRestart} object.
+
+[parameters]
+autorestart_value (int): The value the object {upsAutoRestart} should be.
+
+[configuration]
+ups_autorestart_default_param (int): Default value is set to 1 (on).
