@@ -1,0 +1,112 @@
+#!/usr/bin/python
+# -*- encoding: utf-8; py-indent-offset: 4 -*-
+#
+# Code extracted from Check MK...
+#
+
+import os, pprint, tarfile, time
+
+package_parts = [
+  ( "checks",        "Checks",                    "checks"),
+  ( "checkman",      "Checks' man pages",         "checks-man"),
+  ( "agents",        "Agents",                    "agents"),
+  ( "web",           "Multisite extensions",      "web"),
+  ( "pnp-templates", "PNP4Nagios templates",      "pnp-templates"),
+  ( "pnp-rraconf",   "RRA configuration for PNP", "pnp-rraconf"),
+  ( "doc",           "Documentation files",       "doc"),
+]
+
+pac_ext = ".mkp"
+
+def files_in_dir(part, dir, prefix = ""):
+    if not os.path.exists(dir):
+        return []
+
+    # Handle case where one part-dir lies below another
+    taboo_dirs = [ d for p, t, d in package_parts if p != part ]
+    if dir in taboo_dirs:
+        return []
+
+    result = []
+    files = os.listdir(dir)
+    for f in files:
+        if f in [ '.', '..' ] or f.startswith('.') or f.endswith('~'):
+            continue
+        path = dir + "/" + f
+        if os.path.isdir(path):
+            result += files_in_dir(part, path, prefix + f + "/")
+        else:
+            result.append(prefix + f)
+    result.sort()
+    return result
+
+
+class fake_file:
+    def __init__(self, content):
+        self.content = content
+        self.pointer = 0
+
+    def size(self):
+        return len(self.content)
+
+    def read(self, size):
+        new_end = self.pointer + size
+        data = self.content[self.pointer:new_end]
+        self.pointer = new_end
+        return data
+
+
+#-----------------------------------------------------------------------
+
+pacname = 'cmk-ups'
+version = '1.0'
+
+filelists = {}
+package = {
+    "title"                : "UPS checks",
+    "name"                 : pacname,
+    "description"          : "Checks for UPS supporting UPS-MIB",
+    "version"              : version,
+    "version.packaged"     : '1.1.12p7',
+    "version.min_required" : '1.1.12p7',
+    "author"               : "Vaclav Ovsik",
+    "download_url"         : "http://exchange.check-mk.org/%s/" % pacname,
+    "files"                : filelists
+}
+
+num_files = 0
+for part, title, dir in package_parts:
+    files = files_in_dir(part, dir)
+    filelists[part] = files
+    num_files += len(files)
+package["num_files"] = num_files
+
+
+tarfilename = "%s-%s%s" % (pacname, version, pac_ext)
+
+def create_info(filename, size):
+    info = tarfile.TarInfo("info")
+    info.mtime = time.time()
+    info.uid = 0
+    info.gid = 0
+    info.size = size
+    info.mode = 0644
+    info.type = tarfile.REGTYPE
+    info.name = filename
+    return info
+
+tar = tarfile.open(tarfilename, "w:gz")
+info_file = fake_file(pprint.pformat(package))
+info = create_info("info", info_file.size())
+tar.addfile(info, info_file)
+
+# Now pack the actual files into sub tars
+for part, title, dir in package_parts:
+    filenames = package["files"].get(part, [])
+    if len(filenames) > 0:
+        subtarname = part + ".tar"
+        subdata = os.popen("tar cf - --dereference --force-local -C '%s' %s" % (dir, " ".join(filenames))).read()
+        info = create_info(subtarname, len(subdata))
+        tar.addfile(info, fake_file(subdata))
+
+tar.close()

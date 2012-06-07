@@ -1,2 +1,4 @@
+*.mkp
 *.pyc
 *.sw?
+dosync
