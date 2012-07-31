@@ -52,16 +52,16 @@ def check_ups_levels(key, value, params):
             level[k] = v
         if level['lc'] is not None and value <= level['lc']:
             status = 2
-            txt += ' (!! <= ' + str(level['lc']) + ')'
+            txt += ' (!!) <= ' + str(level['lc'])
         elif level['lw'] is not None and value <= level['lw']:
             status = 1
-            txt += ' (! <= ' + str(level['lw']) + ')'
+            txt += ' (!) <= ' + str(level['lw'])
         elif level['hc'] is not None and value >= level['hc']:
             status = 2
-            txt += ' (!! >= ' + str(level['hc']) + ')'
+            txt += ' (!!) >= ' + str(level['hc'])
         elif level['hw'] is not None and value >= level['hw']:
             status = 1
-            txt += ' (! >= ' + str(level['hw']) + ')'
+            txt += ' (!) >= ' + str(level['hw'])
     def xstr(x):
         if x is None:
             return ''
