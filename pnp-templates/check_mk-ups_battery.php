@@ -32,7 +32,7 @@ foreach ($NAME as $i => $n) {
 
 
 $ds_name[1] = "Time on battery power";
-$opt[1] = "--vertical-label 'min' --title \"$hostname / $servicedesc\" --lower 0 ";
+$opt[1] = "--vertical-label 'min' --title \"$hostname / $servicedesc\" --lower-limit 0 ";
 
 $def[1] = "DEF:times=$RRD[SecondsOnBattery]:MAX ";
 $def[1] .= "CDEF:timem=times,60,/ ";
@@ -42,7 +42,7 @@ $def[1] .= "GPRINT:timem:MAX:\"%4.0lfmin max\" ";
 
 
 $ds_name[2] = "Est. time remaining";
-$opt[2] = "--vertical-label 'min' --title \"$hostname / $servicedesc\" --lower 0 ";
+$opt[2] = "--vertical-label 'min' --title \"$hostname / $servicedesc\" --lower-limit 0 ";
 
 $def[2] = "DEF:etrem=$RRD[EstimatedMinutesRemaining]:AVERAGE ";
 $def[2] .= "LINE1:etrem#050:\"est. time remaining\" ";
@@ -55,7 +55,7 @@ if ( $CRIT['EstimatedMinutesRemaining'] != "" )
 
 
 $ds_name[3] = "Est. charge remaining";
-$opt[3] = "--vertical-label '%' --title \"$hostname / $servicedesc\" --lower 0 --upper 101 ";
+$opt[3] = "--vertical-label '%' --title \"$hostname / $servicedesc\" --lower-limit 0 --upper-limit 101 ";
 
 $def[3] = "DEF:echrem=$RRD[EstimatedChargeRemaining]:AVERAGE ";
 $def[3] .= "LINE1:echrem#050:\"est. charge remaining\" ";
