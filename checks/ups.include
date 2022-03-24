@@ -34,7 +34,7 @@ def check_ups_levels(key, value, params):
         return params.get(key + '_' + subkey)
 
     def has_my_param(subkey):
-        return params.has_key(key + '_' + subkey)
+        return key + '_' + subkey in params
 
     label = get_my_param('label') or key
     levels = get_my_param('levels')

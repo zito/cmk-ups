@@ -79,24 +79,30 @@ def check_ups_input(item, params, info):
             )
 
 
-check_info['ups_input.bads'] = (check_ups_input_bads, 'UPS Input Bads',
-        0, inventory_ups_input_bads)
-check_info['ups_input'] = (check_ups_input, 'UPS Input %s',
-        1, inventory_ups_input)
+check_info['ups_input.bads'] = {
+    "check_function": check_ups_input_bads,
+    "service_description": "UPS Input Bads",
+    "has_perfdata": False,
+    "inventory_function": inventory_ups_input_bads,
+}
+check_info['ups_input'] = {
+    "check_function": check_ups_input,
+    "service_description": "UPS Input %s",
+    "has_perfdata": 1,
+    "inventory_function": inventory_ups_input,
+    "snmp_info": [
+        ('.1.3.6.1.2.1.33.1.3', [
+            '1.0',  # UPS-MIB::upsInputLineBads.0
+            '2.0',  # UPS-MIB::upsInputNumLines.0
+        ]),
+        ('.1.3.6.1.2.1.33.1.3.3.1', [
+            '2',  # UPS-MIB::upsInputFrequency
+            '3',  # UPS-MIB::upsInputVoltage
+            '4',  # UPS-MIB::upsInputCurrent
+        ]),
+    ],
+    "snmp_scan_function": lambda oid: oid('.1.3.6.1.2.1.33.1.5.1.0') in ['.1.3.6.1.4.1.3808.1.1.1'],
+}
 check_includes['ups_input'] = [ 'ups.include' ]
 check_default_levels['ups_input'] = 'ups_default_levels'
 
-snmp_info['ups_input'] = [
-    ('.1.3.6.1.2.1.33.1.3', [
-        '1.0',  # UPS-MIB::upsInputLineBads.0
-        '2.0',  # UPS-MIB::upsInputNumLines.0
-    ]),
-    ('.1.3.6.1.2.1.33.1.3.3.1', [
-        '2',  # UPS-MIB::upsInputFrequency
-        '3',  # UPS-MIB::upsInputVoltage
-        '4',  # UPS-MIB::upsInputCurrent
-    ]),
-]
-
-snmp_scan_functions['ups_input'] = \
-        lambda oid: oid('.1.3.6.1.2.1.33.1.3.1.0') != None

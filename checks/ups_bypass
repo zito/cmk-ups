@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- encoding: utf-8; py-indent-offset: 4 -*-
 # +------------------------------------------------------------------+
 # |             ____ _               _        __  __ _  __           |
@@ -76,25 +76,29 @@ def check_ups_bypass(item, params, info):
     volt, = [ saveint(x) for x in bplines[num] ]
     return check_ups_chk_levels_final('bypass_volt', volt, params)
 
-
-check_info['ups_bypass.freq'] = (check_ups_bypass_freq, 'UPS Bypass Freq',
-        1, inventory_ups_bypass_freq)
+check_info['ups_bypass.freq'] = {
+    "check_function": check_ups_bypass_freq,
+    "service_description": "UPS Bypass Freq",
+    "has_perfdata": True,
+    "inventory_function": inventory_ups_bypass_freq,
+}
 check_default_levels['ups_bypass.freq'] = 'ups_default_levels'
 
-check_info['ups_bypass'] = (check_ups_bypass, 'UPS Bypass %s',
-        1, inventory_ups_bypass)
+check_info['ups_bypass'] = {
+    "check_function": check_ups_bypass,
+    "service_description": "UPS Bypass %s",
+    "has_perfdata": True,
+    "inventory_function": inventory_ups_bypass,
+    "snmp_info": [
+        ('.1.3.6.1.2.1.33.1.5', [
+            '1.0',  # UPS-MIB::upsBypassFrequency.0
+            '2.0',  # UPS-MIB::upsBypassNumLines.0
+        ]),
+        ('.1.3.6.1.2.1.33.1.5.3.1', [
+            '2',    # UPS-MIB::upsBypassVoltage
+        ]),
+    ],
+    "snmp_scan_function": lambda oid: oid('.1.3.6.1.2.1.33.1.5.1.0') in ['.1.3.6.1.4.1.3808.1.1.1'],
+}
 check_default_levels['ups_bypass'] = 'ups_default_levels'
 check_includes['ups_bypass'] = [ 'ups.include' ]
-
-snmp_info['ups_bypass'] = [
-    ('.1.3.6.1.2.1.33.1.5', [
-        '1.0',  # UPS-MIB::upsBypassFrequency.0
-        '2.0',  # UPS-MIB::upsBypassNumLines.0
-    ]),
-    ('.1.3.6.1.2.1.33.1.5.3.1', [
-        '2',    # UPS-MIB::upsBypassVoltage
-    ]),
-]
-
-snmp_scan_functions['ups_bypass'] = \
-        lambda oid: oid('.1.3.6.1.2.1.33.1.5.1.0') != None

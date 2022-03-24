@@ -97,31 +97,40 @@ def check_ups_output(item, params, info):
             check_ups_levels('output_load', percload, params),
             )
 
-check_info['ups_output.freq'] = (check_ups_output_freq, 'UPS Output Freq',
-        1, inventory_ups_output_freq)
+check_info['ups_output.freq'] = {
+    "check_function": check_ups_output_freq,
+    "service_description": "UPS Output Freq",
+    "has_perfdata": True,
+    "inventory_function": inventory_ups_output_freq,
+}
 check_default_levels['ups_output.freq'] = 'ups_default_levels'
 
-check_info['ups_output.source'] = (check_ups_output_source, 'UPS Output Source',
-        0, inventory_ups_output_source)
+check_info['ups_output.source'] = {
+    "check_function": check_ups_output_source,
+    "service_description": "UPS Output Source",
+    "has_perfdata": False,
+    "inventory_function": inventory_ups_output_source,
+}
 
-check_info['ups_output'] = (check_ups_output, 'UPS Output %s',
-        1, inventory_ups_output)
+check_info['ups_output'] = {
+    "check_function": check_ups_output,
+    "service_description": "UPS Output %s",
+    "has_perfdata": 1,
+    "inventory_function": inventory_ups_output,
+    "snmp_info": [
+        ('.1.3.6.1.2.1.33.1.4', [
+            '1.0',  # UPS-MIB::upsOutputSource.0
+            '2.0',  # UPS-MIB::upsOutputFrequency.0
+            '3.0',  # UPS-MIB::upsOutputNumLines.0
+        ]),
+        ('.1.3.6.1.2.1.33.1.4.4.1', [
+            '2',    # UPS-MIB::upsOutputVoltage
+            '3',    # UPS-MIB::upsOutputCurrent
+            '4',    # UPS-MIB::upsOutputPower
+            '5',    # UPS-MIB::upsOutputPercentLoad
+        ]),
+    ],
+    "snmp_scan_function": lambda oid: oid('.1.3.6.1.2.1.33.1.5.1.0') in ['.1.3.6.1.4.1.3808.1.1.1']
+}
 check_includes['ups_output'] = [ 'ups.include' ]
 check_default_levels['ups_output'] = 'ups_default_levels'
-
-snmp_info['ups_output'] = [
-    ('.1.3.6.1.2.1.33.1.4', [
-        '1.0',  # UPS-MIB::upsOutputSource.0
-        '2.0',  # UPS-MIB::upsOutputFrequency.0
-        '3.0',  # UPS-MIB::upsOutputNumLines.0
-    ]),
-    ('.1.3.6.1.2.1.33.1.4.4.1', [
-        '2',    # UPS-MIB::upsOutputVoltage
-        '3',    # UPS-MIB::upsOutputCurrent
-        '4',    # UPS-MIB::upsOutputPower
-        '5',    # UPS-MIB::upsOutputPercentLoad
-    ]),
-]
-
-snmp_scan_functions['ups_output'] = \
-        lambda oid: oid('.1.3.6.1.2.1.33.1.4.1.0') != None
